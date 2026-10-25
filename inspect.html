@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>模型检视</title>
+  <style>
+    html,body{margin:0;height:100%;background:#0a0908;overflow:hidden}
+    #info{position:fixed;left:14px;top:14px;color:#c8a86a;font:12px/1.7 ui-monospace,Menlo,monospace;z-index:9;white-space:pre}
+  </style>
+</head>
+<body>
+<div id="info">loading…</div>
+<script type="module">
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+
+const url = new URLSearchParams(location.search).get('m') || '/src/assets/mask.glb'
+const solid = new URLSearchParams(location.search).get('solid') === '1'
+
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+renderer.setSize(innerWidth, innerHeight)
+renderer.setPixelRatio(1)
+renderer.setClearColor(0x0a0908, 1)
+document.body.appendChild(renderer.domElement)
+
+const scene = new THREE.Scene()
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.01, 5000)
+
+scene.add(new THREE.AmbientLight(0xffffff, 1.2))
+const d1 = new THREE.DirectionalLight(0xffffff, 2.0); d1.position.set(2, 3, 4); scene.add(d1)
+const d2 = new THREE.DirectionalLight(0x88aaff, 0.8); d2.position.set(-3, -1, -2); scene.add(d2)
+
+const loader = new GLTFLoader()
+loader.setMeshoptDecoder(MeshoptDecoder)
+const gltf = await loader.loadAsync(url)
+const root = gltf.scene
+
+const box = new THREE.Box3().setFromObject(root)
+const size = box.getSize(new THREE.Vector3())
+
+// 用顶点质心居中，而不是包围盒中心——扫描件的离群碎片会把 box 拉偏
+const centroid = new THREE.Vector3()
+let vsum = 0
+root.traverse((o) => {
+  if (!o.isMesh) return
+  const p = o.geometry.getAttribute('position')
+  for (let i = 0; i < p.count; i += 7) {
+    centroid.x += p.getX(i); centroid.y += p.getY(i); centroid.z += p.getZ(i)
+    vsum++
+  }
+})
+if (vsum) centroid.divideScalar(vsum)
+const center = box.getCenter(new THREE.Vector3())
+const r = Math.max(size.x, size.y, size.z)
+
+root.position.sub(center)
+scene.add(root)
+
+// 参考坐标轴：红=X 绿=Y 蓝=Z，长度取包围盒最大边
+const axes = new THREE.AxesHelper(r * 0.8)
+scene.add(axes)
+// 包围盒线框
+const helper = new THREE.Box3Helper(box.clone().translate(center.clone().negate()), 0x335544)
+scene.add(helper)
+
+let tris = 0
+let verts = 0
+root.traverse((o) => {
+  if (!o.isMesh) return
+  const g = o.geometry
+  verts += g.getAttribute('position').count
+  tris += (g.getIndex() ? g.getIndex().count : g.getAttribute('position').count) / 3
+  if (solid) o.material = new THREE.MeshStandardMaterial({ color: 0x9a7a45, metalness: 0.15, roughness: 0.8, side: THREE.DoubleSide })
+})
+
+document.getElementById('info').textContent =
+  `file: ${url}\n` +
+  `size: ${size.x.toFixed(3)} x ${size.y.toFixed(3)} x ${size.z.toFixed(3)}\n` +
+  `verts: ${verts.toLocaleString()}  tris: ${Math.round(tris).toLocaleString()}\n` +
+  `min: ${box.min.toArray().map(v=>v.toFixed(2))}\n` +
+  `max: ${box.max.toArray().map(v=>v.toFixed(2))}`
+
+// 相机：正前方（+Z 看向原点）
+const dist = r * 1.9
+camera.position.set(0, 0, dist)
+camera.lookAt(0, 0, 0)
+
+window.__READY__ = { size: [size.x, size.y, size.z], verts, tris: Math.round(tris) }
+
+renderer.render(scene, camera)
+
+// 支持 ?view=front|side|top|back 换角度看
+const view = new URLSearchParams(location.search).get('view') || 'front'
+const pos = {
+  front: [0, 0, dist],
+  back: [0, 0, -dist],
+  side: [dist, 0, 0],
+  top: [0, dist, 0.001],
+  iso: [dist * 0.6, dist * 0.45, dist * 0.7]
+}[view]
+camera.position.set(...pos)
+camera.lookAt(0, 0, 0)
+renderer.render(scene, camera)
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #07060a;
+}
+
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  color: #e9dfc9;
+  -webkit-font-smoothing: antialiased;
+  cursor: crosshair;
+}
+
+.stage { position: fixed; inset: 0; }
+
+canvas { display: block; }
+
+/* 暗角 + 颗粒，增强空间感 */
+.vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 32%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.9) 100%);
+}
+
+.grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: .05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='.6'/></svg>");
+  mix-blend-mode: overlay;
+}
+
+.ui { position: absolute; z-index: 5; pointer-events: none; }
+
+/* 顶部 */
+.top {
+  top: 0; left: 0; right: 0;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 30px 36px;
+  background: linear-gradient(180deg, rgba(7,6,10,.85), rgba(7,6,10,0));
+}
+
+.brand .zh {
+  display: block;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", serif;
+  font-size: 26px; letter-spacing: .22em; color: #f3e8cd;
+  text-shadow: 0 0 24px rgba(212,175,55,.35);
+}
+
+.brand .en {
+  display: block; margin-top: 8px;
+  font-size: 10px; letter-spacing: .34em; color: #a98f5f;
+}
+
+.meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; letter-spacing: .2em; color: #a98f5f;
+  padding-top: 6px;
+}
+
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #d4af37;
+  box-shadow: 0 0 12px #d4af37;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: .45; transform: scale(.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* 控制按钮 */
+.controls {
+  right: 36px; bottom: 92px;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: auto;
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 10px 16px;
+  font-size: 12px; letter-spacing: .12em;
+  color: #cdbb96;
+  background: rgba(20,16,10,.55);
+  border: 1px solid rgba(212,175,55,.28);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: all .25s ease;
+  font-family: inherit;
+}
+
+.btn:hover {
+  color: #f6ecd5;
+  border-color: rgba(212,175,55,.65);
+  background: rgba(40,31,16,.75);
+  transform: translateY(-1px);
+}
+
+.btn.on { border-color: rgba(212,175,55,.6); color: #f6ecd5; }
+
+/* 进"戴面具"那一页的入口：金线更亮一档，和普通开关区分开 */
+.btn-face {
+  text-decoration: none;
+  color: #f0dfae;
+  border-color: rgba(212,175,55,.55);
+  background: rgba(48,36,14,.6);
+}
+.btn-face .led {
+  background: #ffd873;
+  box-shadow: 0 0 10px #ffd873;
+}
+.btn-face:hover {
+  background: rgba(72,54,20,.8);
+  border-color: rgba(236,205,120,.9);
+  box-shadow: 0 0 18px rgba(212,175,55,.28);
+}
+
+.led {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #6b5a3a;
+  transition: all .25s ease;
+}
+
+.btn.on .led {
+  background: #ffd873;
+  box-shadow: 0 0 10px #ffd873;
+}
+
+/* 底部 */
+.bottom {
+  left: 0; right: 0; bottom: 0;
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 26px 36px 28px;
+  background: linear-gradient(0deg, rgba(7,6,10,.88), rgba(7,6,10,0));
+}
+
+.hint {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; letter-spacing: .16em; color: #8d7a56;
+}
+
+.hint span { color: #d3bd8e; }
+.hint i { width: 1px; height: 12px; background: rgba(212,175,55,.3); }
+
+.stat { text-align: right; }
+.stat b {
+  display: block;
+  font-family: "Songti SC", serif;
+  font-size: 20px; letter-spacing: .08em; color: #e8d5a8;
+}
+.stat span { font-size: 9px; letter-spacing: .3em; color: #8d7a56; }
+
+/* 加载 */
+.loader {
+  position: absolute; inset: 0; z-index: 20;
+  display: grid; place-content: center; justify-items: center; gap: 18px;
+  background: #07060a;
+  transition: opacity .7s ease, visibility .7s;
+}
+
+.loader.hide { opacity: 0; visibility: hidden; }
+
+.loader p { font-size: 11px; letter-spacing: .3em; color: #a98f5f; }
+
+.ring {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1px solid rgba(212,175,55,.2);
+  border-top-color: #d4af37;
+  animation: spin 1.1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 760px) {
+  .top { padding: 22px 18px; }
+  .brand .zh { font-size: 19px; letter-spacing: .16em; }
+  .brand .en { font-size: 8px; letter-spacing: .22em; }
+  .meta { display: none; }
+  .controls { right: 16px; bottom: 84px; }
+  .btn { padding: 8px 13px; font-size: 11px; }
+  .bottom { padding: 18px; }
+  .hint { font-size: 10px; }
+  .stat b { font-size: 17px; }
+}

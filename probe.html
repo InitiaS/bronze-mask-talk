@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>模型探针</title>
+  <style>
+    html,body{margin:0;height:100%;background:#101010;overflow:hidden}
+    #info{position:fixed;left:12px;top:12px;color:#d8b26a;font:12px/1.6 ui-monospace,Menlo,monospace;white-space:pre;z-index:9}
+  </style>
+</head>
+<body>
+<div id="info">loading…</div>
+<script type="module">
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+
+const q = new URLSearchParams(location.search)
+const url = q.get('m') || '/src/assets/mask.glb'
+const view = q.get('view') || '+z'
+
+const renderer = new THREE.WebGLRenderer({ antialias: true })
+renderer.setSize(innerWidth, innerHeight)
+renderer.setPixelRatio(1)
+renderer.setClearColor(0x101010, 1)
+document.body.appendChild(renderer.domElement)
+
+const scene = new THREE.Scene()
+scene.add(new THREE.AmbientLight(0xffffff, 2.0))
+const d1 = new THREE.DirectionalLight(0xffffff, 2.4); d1.position.set(1, 1.4, 2); scene.add(d1)
+const d2 = new THREE.DirectionalLight(0xaaccff, 1.2); d2.position.set(-2, -1, -1.5); scene.add(d2)
+const d3 = new THREE.DirectionalLight(0xffffff, 0.8); d3.position.set(0, 2, -2); scene.add(d3)
+
+const loader = new GLTFLoader()
+loader.setMeshoptDecoder(MeshoptDecoder)
+const gltf = await loader.loadAsync(url)
+const root = gltf.scene
+
+// —— 用世界坐标顶点做分位数包围盒，剔除摄影测量离群碎片 ——
+root.updateWorldMatrix(true, true)
+const pts = []
+root.traverse((o) => {
+  if (!o.isMesh) return
+  o.material = new THREE.MeshStandardMaterial({ color: 0xb08a52, metalness: 0.1, roughness: 0.75, side: THREE.DoubleSide })
+  const p = o.geometry.getAttribute('position')
+  const v = new THREE.Vector3()
+  for (let i = 0; i < p.count; i += 5) {
+    v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld)
+    pts.push(v.clone())
+  }
+})
+const pct = (arr, p) => arr[Math.min(arr.length - 1, Math.max(0, Math.floor(arr.length * p)))]
+const axis = (k) => {
+  const a = pts.map((v) => v[k]).sort((m, n) => m - n)
+  return [pct(a, 0.01), pct(a, 0.99)]
+}
+const bx = axis('x'), by = axis('y'), bz = axis('z')
+const lo = new THREE.Vector3(bx[0], by[0], bz[0])
+const hi = new THREE.Vector3(bx[1], by[1], bz[1])
+const size = hi.clone().sub(lo)
+const center = lo.clone().add(hi).multiplyScalar(0.5)
+const r = Math.max(size.x, size.y, size.z)
+
+root.position.sub(center)
+scene.add(root)
+scene.add(new THREE.AxesHelper(r * 0.7))
+
+const dirs = {
+  '+z': [0, 0, 1], '-z': [0, 0, -1],
+  '+x': [1, 0, 0], '-x': [-1, 0, 0],
+  '+y': [0, 1, 0],
+  iso: [0.8, 0.5, 1]
+}
+const d = dirs[view] || dirs['+z']
+const dist = r * 2.6
+const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.01, 5000)
+camera.position.set(d[0] * dist, d[1] * dist, d[2] * dist)
+camera.lookAt(0, 0, 0)
+
+const tris = pts.length * 5 / 3
+document.getElementById('info').textContent =
+  `file: ${url}\nview: ${view}\n` +
+  `分位数尺寸: ${size.x.toFixed(3)} x ${size.y.toFixed(3)} x ${size.z.toFixed(3)}\n` +
+  `原包围盒: ${gltf.scene.children.length} node(s), 采样顶点 ${pts.length.toLocaleString()}\n` +
+  `min: ${lo.toArray().map((v) => v.toFixed(2))}\nmax: ${hi.toArray().map((v) => v.toFixed(2))}`
+
+renderer.render(scene, camera)
+window.__READY__ = { size: size.toArray(), view }
+</script>
+</body>
+</html>

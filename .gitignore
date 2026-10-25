@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.tmp/
+rec/
+.chrome-*/
+.DS_Store
+*.log
+public/test/
