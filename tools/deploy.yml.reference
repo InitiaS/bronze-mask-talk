@@ -1,0 +1,68 @@
+name: 构建并部署到 GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    # 只改文档 / 脚本时不必重建站点
+    paths-ignore:
+      - '**.md'
+      - '**.py'
+      - '**.mjs'
+      - '.gitignore'
+  workflow_dispatch:
+
+# GITHUB_TOKEN 的权限：读代码、发 Pages、取 OIDC 令牌给 deploy-pages 用
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一条分支只跑一个部署；不打断进行中的那次，避免线上出现半套文件
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 取出代码
+        uses: actions/checkout@v4
+
+      - name: 装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 装依赖
+        run: npm ci
+
+      - name: 构建
+        # base 是 './'，产物里所有引用都是相对路径，所以不管项目页在
+        # /<repo>/ 还是根域下都能用，不需要传 --base
+        run: npm run build
+
+      - name: 列出产物（排查用）
+        run: |
+          echo "dist 体积：$(du -sh dist | cut -f1)"
+          ls -1 dist
+
+      - name: 配置 Pages
+        uses: actions/configure-pages@v5
+
+      - name: 打包产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署
+        id: deployment
+        uses: actions/deploy-pages@v4

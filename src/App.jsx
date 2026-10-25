@@ -56,7 +56,11 @@ export default function App() {
         <button className="btn" onClick={() => setReplayKey((k) => k + 1)}>
           重播汇聚
         </button>
-        <a className="btn btn-face" href="/face.html">
+        {/* 相对路径：部署到 GitHub Pages 项目页时站点在 /<repo>/ 子路径下 */}
+        <a className="btn" href="./talk.html">
+          开口讲解
+        </a>
+        <a className="btn btn-face" href="./face.html">
           <span className="led" />
           戴 上 它
         </a>

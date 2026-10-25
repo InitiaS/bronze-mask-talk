@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>戴上面具 · 青铜大面具人脸追踪</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #07060a;
+      overflow: hidden;
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #e8dcc4;
+    }
+    #wrap {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #stage {
+      position: relative;
+      transform-origin: center center;
+      background: #0b0a0d;
+      overflow: hidden;
+    }
+    #stage.mirror { transform: scaleX(-1) scale(var(--zoom, 1)); }
+    #stage.plain  { transform: scale(var(--zoom, 1)); }
+
+    #cam, #still, #mask2d, #gl {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #still { display: none; object-fit: contain; }
+
+    .ui {
+      position: fixed;
+      z-index: 9;
+      letter-spacing: .06em;
+    }
+    .ui.top {
+      left: 24px;
+      top: 20px;
+    }
+    .ui.top h1 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 500;
+      letter-spacing: .22em;
+    }
+    .ui.top p {
+      margin: 6px 0 0;
+      font-size: 11px;
+      color: #8a7d63;
+      letter-spacing: .18em;
+    }
+    .ui.bottom {
+      left: 24px;
+      bottom: 20px;
+      font-size: 12px;
+      color: #8a7d63;
+      line-height: 1.8;
+    }
+    .ui.bottom b { color: #d4af37; font-weight: 500; }
+    .ui.back {
+      right: 24px;
+      top: 24px;
+      font-size: 12px;
+      letter-spacing: .12em;
+      color: #8a7d63;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: all .25s ease;
+    }
+    .ui.back:hover { color: #f0dfae; border-bottom-color: rgba(212,175,55,.6); }
+    .dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #d4af37;
+      margin-right: 8px;
+      vertical-align: 1px;
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/face-B2aqYcVE.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/mask-D8TDJxXV.js">
+  <link rel="modulepreload" crossorigin href="./assets/GLTFLoader-WiCiNv8k.js">
+  <link rel="modulepreload" crossorigin href="./assets/meshopt_decoder.module-CkuQsJa_.js">
+</head>
+<body>
+  <div class="ui top">
+    <h1>戴 上 面 具</h1>
+    <p>BRONZE MASK · FACE TRACKING</p>
+  </div>
+
+  <a class="ui back" href="./">← 回到点云</a>
+
+  <div id="wrap">
+    <div id="stage">
+      <video id="cam" playsinline muted autoplay></video>
+      <img id="still" alt="" />
+      <canvas id="mask2d"></canvas>
+      <canvas id="gl"></canvas>
+    </div>
+  </div>
+
+  <div class="ui bottom">
+    <div><span class="dot"></span><span id="status">初始化…</span></div>
+    <div id="calib" style="color:#8a7d63; font-size:11px"></div>
+    <div id="tip" style="color:#5c5344">姿势由双眼 · 鼻尖 · 下颌解算，面具"眼中心→下缘"对齐到真人"眼中心→下巴"</div>
+  </div>
+
+</body>
+</html>

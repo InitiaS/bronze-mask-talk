@@ -6,3 +6,8 @@ rec/
 .DS_Store
 *.log
 public/test/
+
+# docs/ 是 GitHub Pages 的发布目录，内容为 `npm run build` 的产物，
+# 但必须入库（Pages 走分支发布，不跑 Actions）。
+# 改完源码后要重新生成：rsync -a --delete --exclude test dist/ docs/
+docs/test/

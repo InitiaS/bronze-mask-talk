@@ -371,9 +371,14 @@ let lastVideoTime = -1
 let lastResult = null
 
 async function initLandmarker(mode) {
-  const fileset = await FilesetResolver.forVisionTasks('/wasm')
+  // 用 BASE_URL 而不是写死 '/wasm'：部署到 GitHub Pages 项目页时站点在
+  // /<repo>/ 子路径下，绝对路径会 404。base 是 './'，所以拼出来是相对路径。
+  const fileset = await FilesetResolver.forVisionTasks(`${import.meta.env.BASE_URL}wasm`)
   const opts = {
-    baseOptions: { modelAssetPath: '/models/face_landmarker.task', delegate: 'GPU' },
+    baseOptions: {
+      modelAssetPath: `${import.meta.env.BASE_URL}models/face_landmarker.task`,
+      delegate: 'GPU'
+    },
     runningMode: mode,
     numFaces: 1,
     outputFaceBlendshapes: false,
