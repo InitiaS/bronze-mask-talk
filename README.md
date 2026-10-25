@@ -5,6 +5,10 @@
 > A 820k-particle point-cloud reconstruction of a Sanxingdui bronze mask — and a mode where the
 > mask's mouth is driven by the narration's audio envelope, so the statue appears to give the tour.
 
+**在线预览 · Live demo：** <https://initias.github.io/bronze-mask-talk/>
+（直接进 [开口讲解](https://initias.github.io/bronze-mask-talk/talk.html) /
+[戴上面具](https://initias.github.io/bronze-mask-talk/face.html)；face 页需要摄像头授权）
+
 ![预览](预览_开口讲解.png)
 
 ---
